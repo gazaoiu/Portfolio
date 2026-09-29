@@ -1,0 +1,25 @@
+(() => {
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const data=window.PORTFOLIO;
+$$('[data-person="name"]').forEach(el=>el.textContent=data.person.name);
+$('#year').textContent=new Date().getFullYear();
+// Mobile navigation
+const toggle=$('.menu-toggle'), menu=$('#mobile-menu');
+toggle.addEventListener('click',()=>{const open=toggle.getAttribute('aria-expanded')!=='true';toggle.setAttribute('aria-expanded',String(open));menu.hidden=!open;toggle.setAttribute('aria-label',open?'Close navigation':'Open navigation');});
+$$('#mobile-menu a').forEach(a=>a.addEventListener('click',()=>{menu.hidden=true;toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','Open navigation');}));
+// Section indicator
+const links=$$('.desktop-nav a, #mobile-menu a');
+if('IntersectionObserver' in window){const io=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){links.forEach(a=>{const active=a.hash==='#'+e.target.id;a.classList.toggle('current',active);if(active)a.setAttribute('aria-current','location');else a.removeAttribute('aria-current');});}}),{rootMargin:'-35% 0px -55% 0px'});$$('main section[id]').forEach(s=>io.observe(s));}
+// Capability map
+function setCapability(key){const c=data.capabilities[key];if(!c)return;$$('.cap-tab').forEach(b=>{const active=b.dataset.cap===key;b.classList.toggle('active',active);b.setAttribute('aria-selected',String(active));});$('#cap-kicker').textContent='DISCIPLINE / '+String(Object.keys(data.capabilities).indexOf(key)+1).padStart(2,'0');$('#cap-title').textContent=c.title;$('#cap-desc').textContent=c.desc;const list=$('#cap-skills');list.replaceChildren(...c.skills.map(skill=>{const span=document.createElement('span');span.textContent=skill;return span;}));$('#cap-project').textContent=c.project;}
+$$('.cap-tab').forEach(b=>b.addEventListener('click',()=>setCapability(b.dataset.cap)));
+$$('.cap-tab').forEach((b,i,arr)=>b.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowRight'||e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();const d=(e.key==='ArrowDown'||e.key==='ArrowRight')?1:-1;arr[(i+d+arr.length)%arr.length].focus();arr[(i+d+arr.length)%arr.length].click();}}));setCapability('backend');
+// Case studies
+const dialog=$('#case-dialog');
+function addDetail(parent,label,value){const wrap=document.createElement('section');wrap.className='case-detail';const h=document.createElement('h3');h.textContent=label;const p=document.createElement('p');p.textContent=value;wrap.append(h,p);parent.append(wrap);}
+function openCase(key){const p=data.projects[key];if(!p)return;$('#case-number').textContent=p.number;$('#case-title').textContent=p.title;$('#case-overview').textContent=p.overview;const body=$('#case-body');body.replaceChildren();addDetail(body,'The problem',p.problem);addDetail(body,'Approach & decisions',p.approach);addDetail(body,'Architecture / data flow',p.architecture);const f=document.createElement('section');f.className='case-detail';const h=document.createElement('h3');h.textContent='Key features';const ul=document.createElement('ul');p.features.forEach(x=>{const li=document.createElement('li');li.textContent=x;ul.append(li)});f.append(h,ul);body.append(f);addDetail(body,'Tools & technologies',p.tools.join(' · '));addDetail(body,'Screenshots / demo media',p.media);const actions=document.createElement('div');actions.className='case-links';[['GitHub',p.github],['Live demo',p.demo]].forEach(([label,url])=>{if(url){const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=label+' ↗';actions.append(a)}});if(!actions.children.length){const note=document.createElement('span');note.textContent='Links not supplied yet.';actions.append(note)}body.append(actions);dialog.showModal();}
+$$('[data-case]').forEach(b=>b.addEventListener('click',()=>openCase(b.dataset.case)));
+$('.dialog-close').addEventListener('click',()=>dialog.close());dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()});
+// Contact: validates and launches a prefilled mail draft; requires real email configuration.
+$('#contact-form').addEventListener('submit',e=>{e.preventDefault();const form=e.currentTarget,status=$('#form-status');if(!form.reportValidity())return;if(!data.person.email||!/^\S+@\S+\.\S+$/.test(data.person.email)){status.textContent='Add a valid real email address in content.js before using this form.';status.className='form-status error';return;}const fields=new FormData(form);const subject=encodeURIComponent(fields.get('subject'));const body=encodeURIComponent('From: '+fields.get('name)+' ('+fields.get('email)+')\n\n'+fields.get('message));window.location.href='mailto:'+encodeURIComponent(data.person.email)+'?subject='+subject+'&body='+body;status.textContent='Your email app should open with the message prepared.';status.className='form-status success';});
+})();
